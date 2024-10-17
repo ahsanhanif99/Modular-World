@@ -1,113 +1,123 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
+import { WebView } from "react-native-webview";
 import { StatusBar } from "expo-status-bar";
 import {
-SafeAreaView,
-  View,
+  SafeAreaView,
   StyleSheet,
-  Text,
-  Image,
-  ActivityIndicator,
-  LogBox,
+  TouchableOpacity,
   BackHandler,
-  
+  ActivityIndicator,
+  Image,
+  Linking,
 } from "react-native";
-import { WebView } from "react-native-webview";
+import * as SplashScreen from "expo-splash-screen";
 
-import AppNavigator from "./src/navigation/AppNavigator";
+SplashScreen.preventAutoHideAsync();
 
-const App = () => {
-  LogBox.ignoreAllLogs();
-  const [checkIstrue, setCheckTrue] = useState(null);
-  const [checkScreen, setCheckScreen] = useState(false);
-  const [showWebView, setShowWebView] = useState(false);
+export default function App() {
   const webViewRef = useRef(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isPageLoading, setIsPageLoading] = useState(false); // Track every page load
+
+  const handleBackButton = () => {
+    if (webViewRef.current) {
+      webViewRef.current.goBack();
+      return true;
+    }
+    return false;
+  };
 
   useEffect(() => {
-    checkWhichLoading();
+    BackHandler.addEventListener("hardwareBackPress", handleBackButton);
+    return () => {
+      BackHandler.removeEventListener("hardwareBackPress", handleBackButton);
+    };
   }, []);
 
-  const checkWhichLoading = () => {
-    setShowWebView(true);
-    var requestOptions = {
-      method: "GET",
-      redirect: "follow",
-    };
-
-    fetch("https://filmomonny.com/Api/visionaries.php", requestOptions)
-      .then((response) => response.json())
-      .then((result) => {
-        console.log("Ress0-0->", result?.status);
-        setCheckTrue(result?.status);
-        // setCheckTrue(false)
-        setCheckScreen(true);
-      })
-      .catch((error) => console.log("error", error));
+  const handleWebViewLoad = async () => {
+    setIsLoading(false);
+    await SplashScreen.hideAsync();
   };
-  const renderContent = () => {
-    if (checkScreen) {
-      if (checkIstrue) {
-        return (
-          <SafeAreaView style={styles.body}>
-            <StatusBar style="dark" barStyle={"dark-content"} />
-            <WebView
-              style={styles.webview}
-              ref={webViewRef}
-              source={{ uri: "https://visionaries-all.s3.ap-northeast-3.amazonaws.com/app/Visionaries+X.html" }}
-              mixedContentMode="compatibility"
-              // startInLoadingState
-              javaScriptEnabled={true}
-              domStorageEnabled={true}
-              setBuiltInZoomControls={false}
-              allowFileAccess={true}
-            />
-          </SafeAreaView>
-        );
-      } else {
-        return <AppNavigator />
-      }
-    } else {
-      return (
-        <View style={styles.centeredView}>
-          <ActivityIndicator size={"small"} color={"#000"} />
-        </View>
-      );
+
+  const handleShouldStartLoadWithRequest = (event) => {
+    const googleAuthUrls = [
+      "https://accounts.google.com",
+      "https://accounts.google.com/signin/oauth",
+    ];
+
+    if (googleAuthUrls.some((url) => event.url.startsWith(url))) {
+      Linking.openURL(event.url);
+      return false;
     }
+
+    return true;
   };
 
-  return renderContent();
-};
+  return (
+    <SafeAreaView style={styles.body}>
+      <StatusBar style="light" barStyle={"light-content"} />
 
-export default App;
+      {/* Activity Indicator for every page load */}
+      {isPageLoading && (
+        <ActivityIndicator
+          size="large"
+          color="#144477"
+          style={styles.loadingOverlay}
+        />
+      )}
+
+      <WebView
+        style={styles.webview}
+        ref={webViewRef}
+        source={{ uri: "https://www.modularworld.tv/" }}
+        onLoadStart={() => setIsPageLoading(true)} // Show loading when page starts
+        onLoadEnd={() => setIsPageLoading(false)} // Hide loading when page ends
+        onLoad={handleWebViewLoad}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
+        mixedContentMode="compatibility"
+        onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
+      />
+
+      <TouchableOpacity style={styles.backButton} onPress={handleBackButton}>
+        <Image source={require("./assets/nav3.webp")} style={styles.backImage} />
+      </TouchableOpacity>
+    </SafeAreaView>
+  );
+}
 
 const styles = StyleSheet.create({
   body: {
+    backgroundColor: "#144477",
     flex: 1,
-    height: "100%",
-    width: "100%",
+    paddingTop: 25,
   },
   webview: {
+    backgroundColor: "#144477",
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#fff",
   },
-  activityIndicatorStyle: {
-    flex: 1,
+  loadingOverlay: {
     position: "absolute",
-    marginLeft: "auto",
-    marginRight: "auto",
-    marginTop: "auto",
-    marginBottom: "auto",
+    top: 0,
     left: 0,
     right: 0,
-    top: 0,
     bottom: 0,
     justifyContent: "center",
-  },
-  centeredView: {
-    flex: 1,
-    justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.3)", // Semi-transparent background
+    zIndex: 2,
+  },
+  backButton: {
+    position: "absolute",
+    bottom: 100,
+    right: 15,
+    minWidth: 60,
+  },
+  backImage: {
+    width: 70,
+    height: 20,
+    resizeMode: "contain",
   },
 });
-
