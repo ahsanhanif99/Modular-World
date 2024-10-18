@@ -9,8 +9,14 @@ import {
   ActivityIndicator,
   Image,
   Linking,
+  Platform,
 } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
+
+const userAgent =
+  Platform.OS === "ios"
+    ? "Mozilla/5.0 (iPhone; CPU iPhone OS 17_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
+    : "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.6723.58 Mobile Safari/537.36";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -39,20 +45,6 @@ export default function App() {
     await SplashScreen.hideAsync();
   };
 
-  const handleShouldStartLoadWithRequest = (event) => {
-    const googleAuthUrls = [
-      "https://accounts.google.com",
-      "https://accounts.google.com/signin/oauth",
-    ];
-
-    if (googleAuthUrls.some((url) => event.url.startsWith(url))) {
-      Linking.openURL(event.url);
-      return false;
-    }
-
-    return true;
-  };
-
   return (
     <SafeAreaView style={styles.body}>
       <StatusBar style="light" barStyle={"light-content"} />
@@ -76,7 +68,7 @@ export default function App() {
         javaScriptEnabled={true}
         domStorageEnabled={true}
         mixedContentMode="compatibility"
-        onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
+        userAgent={userAgent}
       />
 
       <TouchableOpacity style={styles.backButton} onPress={handleBackButton}>
